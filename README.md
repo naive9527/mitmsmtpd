@@ -1,2 +1,5 @@
 # mitmsmtpd
-mitm smtpd
+
+This project is developed based on Project  https://github.com/mhale/smtpd .
+
+
