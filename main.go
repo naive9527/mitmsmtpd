@@ -13,10 +13,10 @@ import (
 )
 
 func mailHandler(origin net.Addr, from string, to []string, data []byte) error {
-	err := SaveMail(data)
-	if err != nil {
-		return err
-	}
+	// err := SaveMail(data)
+	// if err != nil {
+	// 	return err
+	// }
 
 	r := strings.NewReader(string(data))
 	msg, err := message.Read(r)
@@ -33,11 +33,7 @@ func mailHandler(origin net.Addr, from string, to []string, data []byte) error {
 	ccList, _ := mailHeader.Text("Cc")
 	subject, _ := mailHeader.Subject()
 
-	fmt.Println("From:", from)
-	fmt.Println("To:", to)
-	fmt.Println("Header To:", toList)
-	fmt.Println("Header Cc:", ccList)
-	fmt.Println("Subject:", subject)
+	fmt.Printf("Received an email From: %s To: %s. email header To: %s. email header Cc: %s. Subject is: %s", from, strings.Join(to, "; "), toList, ccList, subject)
 
 	// Handle the body of the email.
 	r = strings.NewReader(string(data))
@@ -66,11 +62,15 @@ func mailHandler(origin net.Addr, from string, to []string, data []byte) error {
 		case *gomail.AttachmentHeader:
 			// This is an attachment (Including the attached files and the pictures in the document)
 			filename, err := h.Filename()
-			cid := strings.Trim(h.Get("Content-Id"), "<>")
+			contentType := p.Header.Get("Content-Type")
 			if err != nil || filename == "" {
+				cid := strings.Trim(h.Get("Content-Id"), "<>")
 				filename = cid
+				fmt.Printf("The file embedded in the email body:%s type %s\n", filename, contentType)
+			} else {
+				fmt.Printf("Attachment:%s type %s\n", filename, contentType)
 			}
-			fmt.Println("Attachment:", filename)
+
 		default:
 			slog.Info("Unknown header type")
 		}
@@ -80,8 +80,13 @@ func mailHandler(origin net.Addr, from string, to []string, data []byte) error {
 }
 
 func main() {
-	fmt.Println("Starting SMTP server on :2525")
-	err := smtpd.ListenAndServe(":2525", mailHandler, "MyServerApp", "mail.example.com")
+	server := ":2525"
+	certFile := "/opt/mygo/mitmsmtpd/tls/mail.pem"
+	keyFile := "/opt/mygo/mitmsmtpd/tls/mail-key.pem"
+	fmt.Printf("Starting SMTP server on %s\n", server)
+	// err := smtpd.ListenAndServe(":2525", mailHandler, "MyServerApp", "mail.example.com")
+	// err := smtpd.ListenAndServe(":2525", mailHandler, "MyServerApp", "")
+	err := smtpd.ListenAndServeTLS(server, certFile, keyFile, mailHandler, "MyServerApp", "")
 	if err != nil {
 		slog.Error(err.Error())
 	}

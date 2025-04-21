@@ -1,4 +1,6 @@
 mitmsmtpd
 *.log
-
+*.eml
+tls/
+!tls/.gitkeep
 
