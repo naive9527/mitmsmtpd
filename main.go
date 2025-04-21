@@ -9,6 +9,8 @@ import (
 )
 
 var AuthMechs = map[string]bool{"PLAIN": true, "LOGIN": true}
+var logPath = "/opt/mygo/mitmsmtpd/"
+var logName = "app.log"
 
 func ListenAndServeTLSAuth(addr string, certFile string, keyFile string, handler smtpd.Handler, appname string, hostname string, authHandler smtpd.AuthHandler) error {
 	srv := &smtpd.Server{Addr: addr, Handler: handler, Appname: appname, Hostname: hostname, AuthHandler: authHandler, AuthRequired: true,
@@ -21,10 +23,12 @@ func ListenAndServeTLSAuth(addr string, certFile string, keyFile string, handler
 }
 
 func main() {
+	Xlog(logPath, logName)
+	smtpd.Debug = true
 	server := ":2525"
 	certFile := "/opt/mygo/mitmsmtpd/tls/mail.pem"
 	keyFile := "/opt/mygo/mitmsmtpd/tls/mail-key.pem"
-	fmt.Printf("Starting SMTP server on %s\n", server)
+	slog.Info(fmt.Sprintf("Starting SMTP server on server %s", server))
 	// err := smtpd.ListenAndServe(":2525", mailHandler, "MyServerApp", "mail.example.com")
 	// err := smtpd.ListenAndServe(":2525", mailHandler, "MyServerApp", "")
 	// err := smtpd.ListenAndServeTLS(server, certFile, keyFile, mailHandler, "MyServerApp", "")

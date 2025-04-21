@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"net"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -35,7 +36,7 @@ var userDB = map[string]string{
 func authHandler(remoteAddr net.Addr, mechanism string, username []byte, password []byte, shared []byte) (bool, error) {
 	value, ok := AuthMechs[mechanism]
 	if !(ok && value == true) {
-		slog.Info("Unsupported authentication method", mechanism)
+		slog.Warn(fmt.Sprintf("Unsupported authentication method %s", mechanism))
 		return false, nil
 	}
 	user := string(username)
@@ -43,10 +44,10 @@ func authHandler(remoteAddr net.Addr, mechanism string, username []byte, passwor
 
 	// 验证用户名和密码
 	if storedPass, ok := userDB[user]; ok && storedPass == pass {
-		slog.Info("Authentication successful", mechanism, "Username", user)
+		slog.Info(fmt.Sprintf("Authentication successful method %s", mechanism), "Username", user)
 		return true, nil
 	}
-	slog.Warn("Authentication failed", mechanism, "Username", user)
+	slog.Error(fmt.Sprintf("Authentication failed method %s", mechanism), "Username", user)
 	return false, nil
 }
 
@@ -71,7 +72,7 @@ func mailHandler(origin net.Addr, from string, to []string, data []byte) error {
 	ccList, _ := mailHeader.Text("Cc")
 	subject, _ := mailHeader.Subject()
 
-	fmt.Printf("Received an email From: %s To: %s. email header To: %s. email header Cc: %s. Subject is: %s", from, strings.Join(to, "; "), toList, ccList, subject)
+	slog.Info("Received an email", "From", from, "To", strings.Join(to, "; "), "email header To", toList, "email header Cc", ccList, "Subject", subject)
 
 	// Handle the body of the email.
 	r = strings.NewReader(string(data))
@@ -96,7 +97,8 @@ func mailHandler(origin net.Addr, from string, to []string, data []byte) error {
 		case *gomail.InlineHeader:
 			// This is the message's text (can be plain-text or HTML)
 			b, _ := io.ReadAll(p.Body)
-			fmt.Println("Body:", string(b))
+			slog.Info(fmt.Sprintf("Body: %s", string(b)))
+
 		case *gomail.AttachmentHeader:
 			// This is an attachment (Including the attached files and the pictures in the document)
 			filename, err := h.Filename()
@@ -104,15 +106,35 @@ func mailHandler(origin net.Addr, from string, to []string, data []byte) error {
 			if err != nil || filename == "" {
 				cid := strings.Trim(h.Get("Content-Id"), "<>")
 				filename = cid
-				fmt.Printf("The file embedded in the email body:%s type %s\n", filename, contentType)
+				slog.Warn("The file embedded in the email body", "Fileanem", filename, "contentType", contentType)
 			} else {
-				fmt.Printf("Attachment:%s type %s\n", filename, contentType)
+				slog.Warn("Attachment", "Fileanem", filename, "contentType", contentType)
 			}
 
 		default:
-			slog.Info("Unknown header type")
+			slog.Error("Unknown header type")
 		}
 
 	}
 	return nil
+}
+
+func Xlog(logPath string, logName string) *slog.Logger {
+	file, _ := os.OpenFile(filepath.Join(logPath, logName), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	// defer file.Close()
+
+	// 创建组合输出流（文件 + 控制台）
+	multiWriter := io.MultiWriter(file, os.Stdout)
+
+	// 初始化slog
+	logger := slog.New(slog.NewJSONHandler(multiWriter, nil))
+	slog.SetDefault(logger)
+
+	// 记录日志（同时输出到文件和控制台）
+	// for i := 0; i < 10; i++ {
+	//      // time.Sleep(time.Second * 2)
+	//      slog.Info("日志轮转测试", "count", i)
+	// }
+
+	return logger
 }
