@@ -1,0 +1,23 @@
+smtpdServer:
+  address: ":2525"                # Service listening address
+  debug: true                     # Enable debug mode
+  app_name: "MyServerApp"         # Server application name
+  hostname: ""                    # Server hostname (empty for auto-detection) e.g.: "mail.example.com"
+
+smtpdTLS:
+  enabled: true                   # Enable TLS
+  cert: "/opt/mygo/mitmsmtpd/tls/mail.pem"     # Path to TLS certificate
+  key: "/opt/mygo/mitmsmtpd/tls/mail-key.pem"  # Path to TLS private key
+
+smtpdAuth:
+  mechanisms:                     # Supported authentication mechanisms
+    "PLAIN": true
+    "LOGIN": true
+  required: true                  # Require authentication
+
+logging:
+  path: "/opt/mygo/mitmsmtpd/"    # Log directory
+  filename: "app.log"            # Log filename
+
+userDB:
+  "user01@example.com": "123456"  # Username:Password

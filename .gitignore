@@ -3,4 +3,5 @@ mitmsmtpd
 *.eml
 tls/
 !tls/.gitkeep
+config.yaml
 

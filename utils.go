@@ -28,22 +28,18 @@ func hashSubject(data []byte) uint64 {
 	return h.Sum64()
 }
 
-// User database (stored in memory; in production environment, it should be replaced by a database)
-var userDB = map[string]string{
-	"user01@example.com": "123456",
-}
-
 func authHandler(remoteAddr net.Addr, mechanism string, username []byte, password []byte, shared []byte) (bool, error) {
-	value, ok := AuthMechs[mechanism]
-	if !(ok && value == true) {
+	mechanism = strings.ToLower(mechanism)
+	value, ok := cfg.SmtpdAuth.Mechanisms[mechanism]
+	if !(ok && value) {
 		slog.Warn(fmt.Sprintf("Unsupported authentication method %s", mechanism))
 		return false, nil
 	}
 	user := string(username)
 	pass := string(password)
 
-	// 验证用户名和密码
-	if storedPass, ok := userDB[user]; ok && storedPass == pass {
+	// check username and password
+	if storedPass, ok := cfg.UserDBMap[user]; ok && storedPass == pass {
 		slog.Info(fmt.Sprintf("Authentication successful method %s", mechanism), "Username", user)
 		return true, nil
 	}
