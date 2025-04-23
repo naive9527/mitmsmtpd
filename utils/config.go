@@ -1,4 +1,4 @@
-package main
+package utils
 
 import (
 	"log/slog"
@@ -7,7 +7,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-var cfg Config // Global configuration instance
+var CFG Config // Global configuration instance
 
 type User struct {
 	Username string `mapstructure:"username"`
@@ -42,7 +42,7 @@ type Config struct {
 	UserDBMap map[string]string `mapstructure:"-"`      // The newly added mapping field (not involved in deserialization)
 }
 
-func initConfig() {
+func InitConfig() {
 	v := viper.New()
 	v.SetConfigName("config")    // Config file name (without extension)
 	v.SetConfigType("yaml")      // Specify config format
@@ -63,19 +63,19 @@ func initConfig() {
 	}
 
 	// Unmarshal to struct
-	if err := v.Unmarshal(&cfg); err != nil {
+	if err := v.Unmarshal(&CFG); err != nil {
 		slog.Error("Failed to unmarshal config", "error", err)
 		os.Exit(1)
 	}
 
 	// convert UserDB to UserDBMap
-	cfg.UserDBMap = make(map[string]string)
-	for _, user := range cfg.UserDB {
+	CFG.UserDBMap = make(map[string]string)
+	for _, user := range CFG.UserDB {
 		// Check for duplicate usernames
-		if _, exists := cfg.UserDBMap[user.Username]; exists {
+		if _, exists := CFG.UserDBMap[user.Username]; exists {
 			slog.Warn("Duplicate username detected", "username", user.Username)
 		}
-		cfg.UserDBMap[user.Username] = user.Password
+		CFG.UserDBMap[user.Username] = user.Password
 	}
 
 }

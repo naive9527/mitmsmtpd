@@ -1,4 +1,4 @@
-package main
+package utils
 
 import (
 	"fmt"
@@ -28,9 +28,9 @@ func hashSubject(data []byte) uint64 {
 	return h.Sum64()
 }
 
-func authHandler(remoteAddr net.Addr, mechanism string, username []byte, password []byte, shared []byte) (bool, error) {
+func AuthHandler(remoteAddr net.Addr, mechanism string, username []byte, password []byte, shared []byte) (bool, error) {
 	mechanism = strings.ToLower(mechanism)
-	value, ok := cfg.SmtpdAuth.Mechanisms[mechanism]
+	value, ok := CFG.SmtpdAuth.Mechanisms[mechanism]
 	if !(ok && value) {
 		slog.Warn(fmt.Sprintf("Unsupported authentication method %s", mechanism))
 		return false, nil
@@ -39,7 +39,7 @@ func authHandler(remoteAddr net.Addr, mechanism string, username []byte, passwor
 	pass := string(password)
 
 	// check username and password
-	if storedPass, ok := cfg.UserDBMap[user]; ok && storedPass == pass {
+	if storedPass, ok := CFG.UserDBMap[user]; ok && storedPass == pass {
 		slog.Info(fmt.Sprintf("Authentication successful method %s", mechanism), "Username", user)
 		return true, nil
 	}
@@ -47,7 +47,7 @@ func authHandler(remoteAddr net.Addr, mechanism string, username []byte, passwor
 	return false, nil
 }
 
-func mailHandler(origin net.Addr, from string, to []string, data []byte) error {
+func MailHandler(origin net.Addr, from string, to []string, data []byte) error {
 	// err := SaveMail(data)
 	// if err != nil {
 	// 	return err
