@@ -1,7 +1,7 @@
-smtpdServer:
+smptdServer:
   address: ":2525"                # Service listening address
   debug: true                     # Enable debug mode
-  app_name: "MyServerApp"         # Server application name
+  appname: "MyServerApp"         # Server application name
   hostname: ""                    # Server hostname (empty for auto-detection) e.g.: "mail.example.com"
 
 smtpdTLS:
@@ -19,5 +19,34 @@ logging:
   path: "/opt/mygo/mitmsmtpd/"    # Log directory
   filename: "app.log"            # Log filename
 
-userDB:
-  "user01@example.com": "123456"  # Username:Password
+userDB:                          # username: password
+  - username: user01@example.com
+    password: "123456"
+  - username: user01@example2.com
+    password: "123456"
+  - username: admin@test.org
+    password: "securePass"
+
+verificationRules:  
+  sender: "^.*@example\\.com$"               # Allowed sender regex pattern (reject if not matched)
+  recipient: "^.*@example\\.com$"            # Required recipient regex pattern (all recipients must match)
+  senderIP: "^(127\\.0\\.0\\.1|10\\.10\\.20\\.11)$"  # Allowed client IP regex (reject all if not matched)
+  emailBodySize: 1024                        # Max email body size in bytes (0=unlimited)
+  attachment:
+    allowed: false                            # Whether attachments are permitted (default: false)
+    maxSize: 2024                             # Max attachment size in bytes (0=unlimited)
+  embeddedContent:                           # Embedded elements in email body (e.g., images)
+    allowed: false                            # Whether embedded content is permitted (default: false)
+    maxSize: 3024                             # Max embedded content size in bytes (0=unlimited)
+
+# verificatioRules:
+#   sender: "^.*@example\\.com$"              # 允许的发件人，不匹配此正则表达式则拒绝
+#   recipient: "^*.@example\\.com$"           # 收信人有多个，每个都需要匹配此正则，否则拒绝
+#   senderIP: "^(127\\.0\\.0\\.1|10\\.10\\.20\\.11)$"   # 发件人的IP地址，每个收信人都需要匹配此正则，不匹配则全部拒绝
+#   emailBodySize: 1024                     # 邮件内容大小，单位Bytes，超过此值则拒绝，默认为0，不限制大小
+#   attachment:                             # 附件  
+#     enabled: false                        # 是否允许有附件，默认为false，不允许
+#     size: 1024                            # 附件大小，单位Bytes，如果允许有附件且大小超过此值则拒绝，默认为0，不限制大小    
+#   emailBodyEmbedded:                      # 邮件正文嵌入的元素(一般为图片)  
+#     enabled: false                        # 是否允许邮件正文嵌入元素，默认为false，不允许 
+#     size: 1024                            # 邮件正文嵌入元素大小，单位Bytes，如果允许嵌入元素且大小超过此值则拒绝，默认为0，不限制大小  

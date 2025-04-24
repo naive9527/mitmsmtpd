@@ -3,6 +3,7 @@ package utils
 import (
 	"log/slog"
 	"os"
+	"regexp"
 
 	"github.com/spf13/viper"
 )
@@ -13,7 +14,10 @@ type User struct {
 	Username string `mapstructure:"username"`
 	Password string `mapstructure:"password"`
 }
-
+type AttachmentRule struct {
+	Allowed bool `mapstructure:"allowed"`
+	MaxSize int  `mapstructure:"maxSize"`
+}
 type Config struct {
 	SmptdServer struct {
 		Address  string `mapstructure:"address"`  // Service listening address
@@ -40,6 +44,19 @@ type Config struct {
 
 	UserDB    []User            `mapstructure:"userDB"` // User database (username/password pairs)
 	UserDBMap map[string]string `mapstructure:"-"`      // The newly added mapping field (not involved in deserialization)
+
+	VerificationRules struct {
+		Sender          string         `mapstructure:"sender"`
+		Recipient       string         `mapstructure:"recipient"`
+		SenderIP        string         `mapstructure:"senderIP"`
+		EmailBodySize   int            `mapstructure:"emailBodySize"`
+		Attachment      AttachmentRule `mapstructure:"attachment"`
+		EmbeddedContent AttachmentRule `mapstructure:"embeddedContent"`
+
+		SenderRegexp    *regexp.Regexp `mapstructure:"-"`
+		RecipientRegexp *regexp.Regexp `mapstructure:"-"`
+		SenderIPRegexp  *regexp.Regexp `mapstructure:"-"`
+	} `mapstructure:"verificationRules"`
 }
 
 func InitConfig() {
@@ -77,5 +94,9 @@ func InitConfig() {
 		}
 		CFG.UserDBMap[user.Username] = user.Password
 	}
+
+	CFG.VerificationRules.SenderRegexp, _ = regexp.Compile(CFG.VerificationRules.Sender)
+	CFG.VerificationRules.RecipientRegexp, _ = regexp.Compile(CFG.VerificationRules.Recipient)
+	CFG.VerificationRules.SenderIPRegexp, _ = regexp.Compile(CFG.VerificationRules.SenderIP)
 
 }
