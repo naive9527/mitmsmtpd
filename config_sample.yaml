@@ -30,13 +30,13 @@ verificationRules:
   sender: "^.*@example\\.com$"               # Allowed sender regex pattern (reject if not matched)
   recipient: "^.*@example\\.com$"            # Required recipient regex pattern (all recipients must match)
   senderIP: "^(127\\.0\\.0\\.1|10\\.10\\.20\\.11)$"  # Allowed client IP regex (reject all if not matched)
-  emailBodySize: 1024                       # Max email body size in bytes (0=unlimited)
+  emailBodySize: 0                       # Max email body size in bytes (0=unlimited)
   attachment:
     allowed: true                            # Whether attachments are permitted (default: false)
     maxSize: 0                             # Max attachment size in bytes (0=unlimited)
   embeddedContent:                           # Embedded elements in email body (e.g., images)
     allowed: true                            # Whether embedded content is permitted (default: false)
-    maxSize: 0                             # Max embedded content size in bytes (0=unlimited)
+    maxSize: 0                          # Max embedded content size in bytes (0=unlimited)
 
 # verificatioRules:
 #   sender: "^.*@example\\.com$"              # 允许的发件人，不匹配此正则表达式则拒绝

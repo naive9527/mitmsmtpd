@@ -82,6 +82,7 @@ func MailHandler(remoteAddr net.Addr, from string, to []string, data []byte) err
 	subject, _ := mailHeader.Subject()
 
 	slog.Info("Received an email", "ClientIP", ip, "From", from, "To", strings.Join(to, "; "), "email header To", toList, "email header Cc", ccList, "Subject", subject)
+	slog.Info(fmt.Sprintf("Email size is %d bytes", len(data)))
 
 	ValidateEmail := NewValidateEmail(ip, from, to, 0, 0, 0)
 	// validate email sender client ip
@@ -99,7 +100,7 @@ func MailHandler(remoteAddr net.Addr, from string, to []string, data []byte) err
 		return err
 	}
 
-	// Handle the body of the email.
+	// Handle the content of the email.
 	r = strings.NewReader(string(data))
 	body, err := gomail.CreateReader(r)
 	if err != nil {
@@ -108,6 +109,8 @@ func MailHandler(remoteAddr net.Addr, from string, to []string, data []byte) err
 	}
 
 	// Loop through reading each part of the body.
+	mailPartType := NewMailPartType()
+	mailBodyCount := 0
 	for {
 		p, err := body.NextPart()
 		if err == io.EOF {
@@ -118,51 +121,90 @@ func MailHandler(remoteAddr net.Addr, from string, to []string, data []byte) err
 			return err
 		}
 
-		switch h := p.Header.(type) {
-		case *gomail.InlineHeader:
-			// This is the message's text (can be plain-text or HTML)
-			b, _ := io.ReadAll(p.Body)
-			ValidateEmail.BodySize = int64(len(b))
-			slog.Info(fmt.Sprintf("Body: %s", string(b)))
+		contentType := p.Header.Get("Content-Type")
+		mailPartSize, err := CalculateReaderSize(p.Body)
+		if err != nil {
+			info := fmt.Sprintf("Failed to calculate the size of contentType: %s, error: %s", contentType, err.Error())
+			slog.Error(info)
+			return errors.New(info)
+		}
 
-		case *gomail.AttachmentHeader:
-			// This is an attachment (Including the attached files and the pictures in the document)
-			contentType := p.Header.Get("Content-Type")
-			tmpsize, err := CalculateReaderSize(p.Body)
-			if err != nil {
-				info := fmt.Sprintf("Failed to calculate the size of the attachment contentType: %s, error: %s", contentType, err.Error())
+		currentPartType := mailPartType.CheckMailPartType(p)
+		if currentPartType == mailPartType.Body {
+			// This is the message's text (can be plain-text or HTML)
+			mailBodyCount += 1
+			if mailBodyCount > 1 {
+				info := "the email has more than one body, please check it"
 				slog.Error(info)
 				return errors.New(info)
 			}
 
-			filename, err := h.Filename()
-			if err != nil || filename == "" {
-				cid := strings.Trim(h.Get("Content-Id"), "<>")
-				filename = cid
-				ValidateEmail.EmbeddedContentSize += tmpsize
-				slog.Warn("The file embedded in the email body", "Filename", filename, "contentType", contentType)
-			} else {
-				ValidateEmail.AttachmentSize += tmpsize
-				slog.Warn("Attachment", "Filename", filename, "contentType", contentType)
-			}
+			ValidateEmail.BodySize = mailPartSize
+		} else if currentPartType == mailPartType.EmbeddedContent {
+			ValidateEmail.EmbeddedContentSize += mailPartSize
+		} else if currentPartType == mailPartType.Attachment {
+			ValidateEmail.AttachmentSize += mailPartSize
+		} else {
+			slog.Error("unknown header type")
+			return errors.New("unknown header type")
+		}
+	}
 
-		default:
-			slog.Error("Unknown header type")
-		}
-
-		// Validate the email body size
-		if err := ValidateEmail.ValidateBodySize(); err != nil {
-			return err
-		}
-		// Validate the email attachment size
-		if err := ValidateEmail.ValidateAttachments(); err != nil {
-			return err
-		}
-		// Validate the email embedded content size
-		if err := ValidateEmail.ValidateEmbeddedContent(); err != nil {
-			return err
-		}
-
+	// Validate the email body size
+	if err := ValidateEmail.ValidateBodySize(); err != nil {
+		return err
+	}
+	// Validate the email attachment size
+	if err := ValidateEmail.ValidateAttachments(); err != nil {
+		return err
+	}
+	// Validate the email embedded content size
+	if err := ValidateEmail.ValidateEmbeddedContent(); err != nil {
+		return err
 	}
 	return nil
+}
+
+type mailPartType struct {
+	Body            string
+	Attachment      string
+	EmbeddedContent string
+	Unknown         string
+}
+
+func NewMailPartType() *mailPartType {
+	return &mailPartType{"Body", "Attachment", "EmbeddedContent", "Unknown"}
+}
+func (mailPT *mailPartType) CheckMailPartType(p *gomail.Part) string {
+	contentType := p.Header.Get("Content-Type")
+	contentId := p.Header.Get("Content-Id")
+
+	switch h := p.Header.(type) {
+	case *gomail.InlineHeader:
+		// This is the message's text (can be plain-text or HTML)
+		if contentId != "" {
+			slog.Warn("The file embedded in the email body", "Filename", contentId, "ContentType", contentType)
+			return mailPT.EmbeddedContent
+		} else {
+			slog.Info("The email body", "ContentType", contentType)
+			return mailPT.Body
+		}
+	case *gomail.AttachmentHeader:
+		// This is an attachment (Including the attached files and the pictures in the document)
+		// h.ContentDisposition()
+		filename, err := h.Filename()
+		if err != nil || filename == "" {
+			// filename = strings.Trim(contentId, "<>")
+			slog.Warn("The file embedded in the email body", "Filename", contentId, "contentType", contentType)
+			return mailPT.EmbeddedContent
+		} else {
+			slog.Warn("Email attachment", "Filename", filename, "contentType", contentType)
+			return mailPT.Attachment
+		}
+
+	default:
+		slog.Error("Unknown header type")
+		return mailPT.Unknown
+	}
+
 }

@@ -61,6 +61,7 @@ func (email *ValidateEmail) ValidateEmailClientIP() error {
 
 func (email *ValidateEmail) ValidateBodySize() error {
 	// Check Email BodySize
+	slog.Info(fmt.Sprintf("Mail Body Size %d bytes", email.BodySize))
 	if CFG.VerificationRules.EmailBodySize == 0 {
 		return nil
 	}
@@ -79,7 +80,7 @@ func (email *ValidateEmail) ValidateAttachments() error {
 	if email.AttachmentSize == 0 {
 		return nil
 	}
-
+	slog.Info(fmt.Sprintf("Mail Attachments Size %d bytes", email.AttachmentSize))
 	if CFG.VerificationRules.Attachment.Allowed {
 		if CFG.VerificationRules.Attachment.MaxSize == 0 || email.AttachmentSize <= int64(CFG.VerificationRules.Attachment.MaxSize) {
 			return nil
@@ -99,7 +100,7 @@ func (email *ValidateEmail) ValidateEmbeddedContent() error {
 	if email.EmbeddedContentSize == 0 {
 		return nil
 	}
-
+	slog.Info(fmt.Sprintf("Mail Embedded Content Size %d bytes", email.EmbeddedContentSize))
 	if CFG.VerificationRules.EmbeddedContent.Allowed {
 		if CFG.VerificationRules.EmbeddedContent.MaxSize == 0 || email.EmbeddedContentSize <= int64(CFG.VerificationRules.EmbeddedContent.MaxSize) {
 			return nil
