@@ -47,6 +47,10 @@ func AuthHandler(remoteAddr net.Addr, mechanism string, username []byte, passwor
 	pass := string(password)
 
 	// check username and password
+	if CFG.SmtpdAuth.AllowAnyAuth {
+		slog.Warn(fmt.Sprintf("AllowAnyAuth Authentication successful method %s", mechanism), "Username", user)
+		return true, nil
+	}
 	if storedPass, ok := CFG.UserDB[user]; ok && storedPass == pass {
 		slog.Info(fmt.Sprintf("Authentication successful method %s", mechanism), "Username", user)
 		return true, nil

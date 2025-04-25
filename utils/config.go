@@ -26,8 +26,9 @@ type Config struct {
 	} `yaml:"smptdServer"`
 
 	SmtpdAuth struct {
-		Mechanisms map[string]bool `yaml:"mechanisms"` // Supported authentication mechanisms
-		Required   bool            `yaml:"required"`   // Authentication required
+		Mechanisms   map[string]bool `yaml:"mechanisms"`   // Supported authentication mechanisms
+		Required     bool            `yaml:"required"`     // Authentication required
+		AllowAnyAuth bool            `yaml:"allowAnyAuth"` // Authentication required
 	} `yaml:"smtpdAuth"`
 
 	SmtpdTLS struct {

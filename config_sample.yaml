@@ -15,6 +15,7 @@ smtpdAuth:
     "PLAIN": true
     "CRAM-MD5": false
   required: true                  # Require authentication
+  allowAnyAuth: true                # Allow authentication through any username and password.
 
 logging:
   path: "/opt/mygo/mitmsmtpd/"    # Log directory
