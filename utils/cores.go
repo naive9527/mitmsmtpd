@@ -59,8 +59,16 @@ func AuthHandler(remoteAddr net.Addr, mechanism string, username []byte, passwor
 	return false, nil
 }
 
-func MailHandler(remoteAddr net.Addr, from string, to []string, data []byte) error {
-	// err := SaveMail(data)
+func MailHandler(remoteAddr net.Addr, from string, to []string, data []byte) (err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			info := fmt.Sprintf("MailHandler panic: %v", r)
+			slog.Error(info)
+			err = errors.New(info)
+		}
+	}()
+
+	// err = SaveMail(data)
 	// if err != nil {
 	// 	return err
 	// }
@@ -90,17 +98,17 @@ func MailHandler(remoteAddr net.Addr, from string, to []string, data []byte) err
 
 	ValidateEmail := NewValidateEmail(ip, from, to, 0, 0, 0)
 	// validate email sender client ip
-	if err := ValidateEmail.ValidateEmailClientIP(); err != nil {
+	if err = ValidateEmail.ValidateEmailClientIP(); err != nil {
 		return err
 	}
 
 	// validate email sender
-	if err := ValidateEmail.ValidateEmailSender(); err != nil {
+	if err = ValidateEmail.ValidateEmailSender(); err != nil {
 		return err
 	}
 
 	// validate email recipient
-	if err := ValidateEmail.ValidateEmailRecipient(); err != nil {
+	if err = ValidateEmail.ValidateEmailRecipient(); err != nil {
 		return err
 	}
 
@@ -155,15 +163,15 @@ func MailHandler(remoteAddr net.Addr, from string, to []string, data []byte) err
 	}
 
 	// Validate the email body size
-	if err := ValidateEmail.ValidateBodySize(); err != nil {
+	if err = ValidateEmail.ValidateBodySize(); err != nil {
 		return err
 	}
 	// Validate the email attachment size
-	if err := ValidateEmail.ValidateAttachments(); err != nil {
+	if err = ValidateEmail.ValidateAttachments(); err != nil {
 		return err
 	}
 	// Validate the email embedded content size
-	if err := ValidateEmail.ValidateEmbeddedContent(); err != nil {
+	if err = ValidateEmail.ValidateEmbeddedContent(); err != nil {
 		return err
 	}
 	return nil

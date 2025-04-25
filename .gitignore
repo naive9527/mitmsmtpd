@@ -4,4 +4,5 @@ mitmsmtpd
 tls/
 !tls/.gitkeep
 config.yaml
+__debug_bin*
 
