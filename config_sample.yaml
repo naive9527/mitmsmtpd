@@ -11,8 +11,9 @@ smtpdTLS:
 
 smtpdAuth:
   mechanisms:                     # Supported authentication mechanisms
+    "LOGIN": true  
     "PLAIN": true
-    "LOGIN": true
+    "CRAM-MD5": false
   required: true                  # Require authentication
 
 logging:
@@ -20,24 +21,22 @@ logging:
   filename: "app.log"            # Log filename
 
 userDB:                          # username: password
-  - username: user01@example.com
-    password: "123456"
-  - username: user01@example2.com
-    password: "123456"
-  - username: admin@test.org
-    password: "securePass"
+  "user01@example.com": "123456"
+  "user02@example.com": "123456"
+  "admin@test.org": "securePass"
+
 
 verificationRules:  
   sender: "^.*@example\\.com$"               # Allowed sender regex pattern (reject if not matched)
   recipient: "^.*@example\\.com$"            # Required recipient regex pattern (all recipients must match)
   senderIP: "^(127\\.0\\.0\\.1|10\\.10\\.20\\.11)$"  # Allowed client IP regex (reject all if not matched)
-  emailBodySize: 1024                        # Max email body size in bytes (0=unlimited)
+  emailBodySize: 1024                       # Max email body size in bytes (0=unlimited)
   attachment:
-    allowed: false                            # Whether attachments are permitted (default: false)
-    maxSize: 2024                             # Max attachment size in bytes (0=unlimited)
+    allowed: true                            # Whether attachments are permitted (default: false)
+    maxSize: 0                             # Max attachment size in bytes (0=unlimited)
   embeddedContent:                           # Embedded elements in email body (e.g., images)
-    allowed: false                            # Whether embedded content is permitted (default: false)
-    maxSize: 3024                             # Max embedded content size in bytes (0=unlimited)
+    allowed: true                            # Whether embedded content is permitted (default: false)
+    maxSize: 0                             # Max embedded content size in bytes (0=unlimited)
 
 # verificatioRules:
 #   sender: "^.*@example\\.com$"              # 允许的发件人，不匹配此正则表达式则拒绝

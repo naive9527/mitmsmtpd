@@ -1,98 +1,71 @@
 package utils
 
 import (
-	"log/slog"
 	"os"
 	"regexp"
 
-	"github.com/spf13/viper"
+	"gopkg.in/yaml.v3"
 )
 
 var CFG Config // Global configuration instance
 
 type User struct {
-	Username string `mapstructure:"username"`
-	Password string `mapstructure:"password"`
+	Username string `yaml:"username"`
+	Password string `yaml:"password"`
 }
 type AttachmentRule struct {
-	Allowed bool `mapstructure:"allowed"`
-	MaxSize int  `mapstructure:"maxSize"`
+	Allowed bool `yaml:"allowed"`
+	MaxSize int  `yaml:"maxSize"`
 }
 type Config struct {
 	SmptdServer struct {
-		Address  string `mapstructure:"address"`  // Service listening address
-		Debug    bool   `mapstructure:"debug"`    // Enable debug mode
-		Appname  string `mapstructure:"appname"`  // Server application name
-		Hostname string `mapstructure:"hostname"` // Server hostname (empty for auto-detection)
-	} `mapstructure:"smptdServer"`
+		Address  string `yaml:"address"`  // Service listening address
+		Debug    bool   `yaml:"debug"`    // Enable debug mode
+		Appname  string `yaml:"appname"`  // Server application name
+		Hostname string `yaml:"hostname"` // Server hostname (empty for auto-detection)
+	} `yaml:"smptdServer"`
 
 	SmtpdAuth struct {
-		Mechanisms map[string]bool `mapstructure:"mechanisms"` // Supported authentication mechanisms
-		Required   bool            `mapstructure:"required"`   // Authentication required
-	} `mapstructure:"smtpdAuth"`
+		Mechanisms map[string]bool `yaml:"mechanisms"` // Supported authentication mechanisms
+		Required   bool            `yaml:"required"`   // Authentication required
+	} `yaml:"smtpdAuth"`
 
 	SmtpdTLS struct {
-		TLSEnabled bool   `mapstructure:"enabled"` // Enable TLS
-		Cert       string `mapstructure:"cert"`    // Path to TLS certificate
-		Key        string `mapstructure:"key"`     // Path to TLS private key
-	} `mapstructure:"smtpdTLS"`
+		TLSEnabled bool   `yaml:"enabled"` // Enable TLS
+		Cert       string `yaml:"cert"`    // Path to TLS certificate
+		Key        string `yaml:"key"`     // Path to TLS private key
+	} `yaml:"smtpdTLS"`
 
 	Logging struct {
-		Path     string `mapstructure:"path"`     // Log directory
-		Filename string `mapstructure:"filename"` // Log filename
-	} `mapstructure:"logging"`
+		Path     string `yaml:"path"`     // Log directory
+		Filename string `yaml:"filename"` // Log filename
+	} `yaml:"logging"`
 
-	UserDB    []User            `mapstructure:"userDB"` // User database (username/password pairs)
-	UserDBMap map[string]string `mapstructure:"-"`      // The newly added mapping field (not involved in deserialization)
+	UserDB map[string]string `yaml:"userDB"` // User database (username/password pairs)
 
 	VerificationRules struct {
-		Sender          string         `mapstructure:"sender"`
-		Recipient       string         `mapstructure:"recipient"`
-		SenderIP        string         `mapstructure:"senderIP"`
-		EmailBodySize   int            `mapstructure:"emailBodySize"`
-		Attachment      AttachmentRule `mapstructure:"attachment"`
-		EmbeddedContent AttachmentRule `mapstructure:"embeddedContent"`
+		Sender          string         `yaml:"sender"`
+		Recipient       string         `yaml:"recipient"`
+		SenderIP        string         `yaml:"senderIP"`
+		EmailBodySize   int            `yaml:"emailBodySize"`
+		Attachment      AttachmentRule `yaml:"attachment"`
+		EmbeddedContent AttachmentRule `yaml:"embeddedContent"`
 
-		SenderRegexp    *regexp.Regexp `mapstructure:"-"`
-		RecipientRegexp *regexp.Regexp `mapstructure:"-"`
-		SenderIPRegexp  *regexp.Regexp `mapstructure:"-"`
-	} `mapstructure:"verificationRules"`
+		SenderRegexp    *regexp.Regexp `yaml:"-"`
+		RecipientRegexp *regexp.Regexp `yaml:"-"`
+		SenderIPRegexp  *regexp.Regexp `yaml:"-"`
+	} `yaml:"verificationRules"`
 }
 
 func InitConfig() {
-	v := viper.New()
-	v.SetConfigName("config")    // Config file name (without extension)
-	v.SetConfigType("yaml")      // Specify config format
-	v.AddConfigPath(".")         // Config search path: current directory
-	v.AddConfigPath("./configs") // Config search path: configs subdirectory
-
-	// Allow environment variables override
-	v.AutomaticEnv()
-
-	// Set default values (optional)
-	v.SetDefault("smtpdTLS.enabled", false)
-	v.SetDefault("smtpdAuth.required", false)
-
-	// Read configuration
-	if err := v.ReadInConfig(); err != nil {
-		slog.Error("Failed to read config", "error", err)
-		os.Exit(1)
+	data, err := os.ReadFile("config.yaml")
+	if err != nil {
+		panic(err)
 	}
 
-	// Unmarshal to struct
-	if err := v.Unmarshal(&CFG); err != nil {
-		slog.Error("Failed to unmarshal config", "error", err)
-		os.Exit(1)
-	}
-
-	// convert UserDB to UserDBMap
-	CFG.UserDBMap = make(map[string]string)
-	for _, user := range CFG.UserDB {
-		// Check for duplicate usernames
-		if _, exists := CFG.UserDBMap[user.Username]; exists {
-			slog.Warn("Duplicate username detected", "username", user.Username)
-		}
-		CFG.UserDBMap[user.Username] = user.Password
+	err = yaml.Unmarshal(data, &CFG)
+	if err != nil {
+		panic(err)
 	}
 
 	CFG.VerificationRules.SenderRegexp, _ = regexp.Compile(CFG.VerificationRules.Sender)

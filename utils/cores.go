@@ -37,7 +37,7 @@ func AuthHandler(remoteAddr net.Addr, mechanism string, username []byte, passwor
 		}
 	}()
 
-	mechanism = strings.ToLower(mechanism)
+	// mechanism = strings.ToLower(mechanism)
 	value, ok := CFG.SmtpdAuth.Mechanisms[mechanism]
 	if !(ok && value) {
 		slog.Warn(fmt.Sprintf("Unsupported authentication method %s", mechanism))
@@ -47,7 +47,7 @@ func AuthHandler(remoteAddr net.Addr, mechanism string, username []byte, passwor
 	pass := string(password)
 
 	// check username and password
-	if storedPass, ok := CFG.UserDBMap[user]; ok && storedPass == pass {
+	if storedPass, ok := CFG.UserDB[user]; ok && storedPass == pass {
 		slog.Info(fmt.Sprintf("Authentication successful method %s", mechanism), "Username", user)
 		return true, nil
 	}
@@ -140,10 +140,10 @@ func MailHandler(remoteAddr net.Addr, from string, to []string, data []byte) err
 				cid := strings.Trim(h.Get("Content-Id"), "<>")
 				filename = cid
 				ValidateEmail.EmbeddedContentSize += tmpsize
-				slog.Warn("The file embedded in the email body", "Fileanem", filename, "contentType", contentType)
+				slog.Warn("The file embedded in the email body", "Filename", filename, "contentType", contentType)
 			} else {
 				ValidateEmail.AttachmentSize += tmpsize
-				slog.Warn("Attachment", "Fileanem", filename, "contentType", contentType)
+				slog.Warn("Attachment", "Filename", filename, "contentType", contentType)
 			}
 
 		default:
