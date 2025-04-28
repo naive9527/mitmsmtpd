@@ -20,7 +20,6 @@ func ListenAndServeTLSAuth(addr string, certFile string, keyFile string, handler
 }
 
 func main() {
-	utils.InitConfig()
 	utils.Xlog(utils.CFG.Logging.Path, utils.CFG.Logging.Filename)
 	var err error
 

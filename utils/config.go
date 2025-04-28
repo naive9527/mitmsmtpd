@@ -42,7 +42,8 @@ type Config struct {
 		Filename string `yaml:"filename"` // Log filename
 	} `yaml:"logging"`
 
-	UserDB map[string]string `yaml:"userDB"` // User database (username/password pairs)
+	UserDB      map[string]string `yaml:"userDB"` // User database (username/password pairs)
+	EmailServer map[string]string `yaml:"emailServer"`
 
 	VerificationRules struct {
 		Sender          string         `yaml:"sender"`
