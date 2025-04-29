@@ -1,8 +1,12 @@
 package utils
 
 import (
+	"errors"
+	"fmt"
+	"log/slog"
 	"os"
 	"regexp"
+	"sync"
 
 	"gopkg.in/yaml.v3"
 )
@@ -74,4 +78,50 @@ func InitConfig() {
 	CFG.VerificationRules.RecipientRegexp, _ = regexp.Compile(CFG.VerificationRules.Recipient)
 	CFG.VerificationRules.SenderIPRegexp, _ = regexp.Compile(CFG.VerificationRules.SenderIP)
 
+}
+
+func init() {
+	InitConfig()
+	MailInfoCacheIns = NewMailInfoCache()
+}
+
+// It is used to store the username and password for client login, so as to forward the email after verification is passed.
+type MailInfoCache struct {
+	mu       sync.RWMutex
+	UserInfo map[string]string
+}
+
+func NewMailInfoCache() *MailInfoCache {
+	return &MailInfoCache{
+		UserInfo: make(map[string]string),
+	}
+}
+
+func (mailInfo *MailInfoCache) GetUserPass(username string) (string, error) {
+	mailInfo.mu.RLock()
+	defer mailInfo.mu.RUnlock()
+
+	if passwd, ok := mailInfo.UserInfo[username]; ok {
+		return passwd, nil
+	}
+	info := fmt.Sprintf("user %s password cannot be obtained", username)
+	slog.Error(info)
+	return "", errors.New(info)
+}
+
+func (mailInfo *MailInfoCache) SetUserPass(username, passwd string) (err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			info := fmt.Sprintf("panic in SetUserPass: %s %v", username, r)
+			slog.Error(info)
+			err = errors.New(info)
+		}
+	}()
+
+	if curPasswd, err := mailInfo.GetUserPass(username); err != nil || curPasswd != passwd {
+		mailInfo.mu.Lock()
+		defer mailInfo.mu.Unlock()
+		mailInfo.UserInfo[username] = passwd
+	}
+	return nil
 }

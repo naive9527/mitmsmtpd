@@ -10,79 +10,15 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/emersion/go-message"
 	gomsgmail "github.com/emersion/go-message/mail"
+	"github.com/spf13/cast"
 	"gopkg.in/gomail.v2"
 )
 
 var MailInfoCacheIns *MailInfoCache
-
-func init() {
-	InitConfig()
-	MailInfoCacheIns = NewMailInfoCache()
-}
-
-// It is used to store the username and password for client login, so as to forward the email after verification is passed.
-type MailInfoCache struct {
-	mu       sync.RWMutex
-	UserInfo map[string]string
-}
-
-func NewMailInfoCache() *MailInfoCache {
-	return &MailInfoCache{
-		UserInfo: make(map[string]string),
-	}
-}
-
-func (mailInfo *MailInfoCache) GetUserPass(username string) (string, error) {
-	mailInfo.mu.RLock()
-	defer mailInfo.mu.RUnlock()
-
-	if passwd, ok := mailInfo.UserInfo[username]; ok {
-		return passwd, nil
-	}
-	return "", fmt.Errorf("user %s password cannot be obtained", username)
-}
-
-func (mailInfo *MailInfoCache) SetUserPass(username, passwd string) (err error) {
-	defer func() {
-		if r := recover(); r != nil {
-			err = fmt.Errorf("panic in SetUserPass: %s %v", username, r)
-		}
-	}()
-
-	if curPasswd, ok := mailInfo.GetUserPass(username); ok != nil || curPasswd != passwd {
-		mailInfo.mu.Lock()
-		defer mailInfo.mu.Unlock()
-		mailInfo.UserInfo[username] = passwd
-	}
-	return nil
-}
-
-func SaveMail(data []byte) (err error) {
-	const EmailPath string = "emails"
-	timestamp := time.Now().Format("20060102_150405")
-	subjectHash := hashSubject(data)
-	filename := fmt.Sprintf("%s_%d.eml", timestamp, subjectHash)
-
-	err = os.MkdirAll(EmailPath, 0755)
-	if err != nil {
-		info := fmt.Sprintf("create email path %s failed: %s", EmailPath, err.Error())
-		slog.Error(info)
-		return errors.New(info)
-	}
-
-	err = os.WriteFile(filepath.Join(EmailPath, filename), data, 0644)
-	if err != nil {
-		info := fmt.Sprintf("saveMail failed: %s", err.Error())
-		slog.Error(info)
-		return errors.New(info)
-	}
-	return nil
-}
 
 func hashSubject(data []byte) uint64 {
 	h := fnv.New64a()
@@ -258,7 +194,7 @@ func MailHandler(remoteAddr net.Addr, from string, to []string, data []byte) (er
 		return err
 	}
 
-	err = SendMailMsg(from, "12312321", "smtp.example.com", 587, mailPartType.GoMailMsg)
+	err = SendMailMsg(from, mailPartType.GoMailMsg)
 	if err != nil {
 		SaveMail(data)
 		return err
@@ -350,15 +286,52 @@ func (mailPT *mailPartType) CheckMailPartType(p *gomsgmail.Part) (ret string, er
 
 }
 
-func SendMailMsg(from, password, smtpServer string, smtpPort int, mailMsg *gomail.Message) error {
+func SendMailMsg(from string, mailMsg *gomail.Message) error {
+	smtpDomain := strings.Split(from, "@")[1]
+	smtpServerCfg, ok := CFG.EmailServer[smtpDomain]
+	if !ok {
+		info := fmt.Sprintf("The email server is not configured for %s", from)
+		slog.Error(info)
+		return errors.New(info)
+	}
+
+	smtpServer := strings.Split(smtpServerCfg, ":")[0]
+	smtpPort := cast.ToInt(strings.Split(smtpServerCfg, ":")[1])
+	password, err := MailInfoCacheIns.GetUserPass(from)
+	if err != nil {
+		return err
+	}
+
 	d := gomail.NewDialer(smtpServer, smtpPort, from, password)
 	if err := d.DialAndSend(mailMsg); err != nil {
-		info := fmt.Sprintf("%s send failure: %s", from, err.Error())
+		info := fmt.Sprintf("%s send to %s failure: %s", from, smtpServerCfg, err.Error())
 		slog.Error(info)
 		return errors.New(info)
 	}
 
 	info := fmt.Sprintf("%s send success", from)
 	slog.Info(info)
+	return nil
+}
+
+func SaveMail(data []byte) (err error) {
+	const EmailPath string = "emails"
+	timestamp := time.Now().Format("20060102_150405")
+	subjectHash := hashSubject(data)
+	filename := fmt.Sprintf("%s_%d.eml", timestamp, subjectHash)
+
+	err = os.MkdirAll(EmailPath, 0755)
+	if err != nil {
+		info := fmt.Sprintf("create email path %s failed: %s", EmailPath, err.Error())
+		slog.Error(info)
+		return errors.New(info)
+	}
+
+	err = os.WriteFile(filepath.Join(EmailPath, filename), data, 0644)
+	if err != nil {
+		info := fmt.Sprintf("saveMail failed: %s", err.Error())
+		slog.Error(info)
+		return errors.New(info)
+	}
 	return nil
 }
