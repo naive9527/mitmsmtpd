@@ -21,6 +21,13 @@ type AttachmentRule struct {
 	Allowed bool `yaml:"allowed"`
 	MaxSize int  `yaml:"maxSize"`
 }
+
+type EmailServerItem struct {
+	Server         string `yaml:"server"`
+	Port           int    `yaml:"port"`
+	AuthMechanisms string `yaml:"authMechanisms"`
+}
+
 type Config struct {
 	SmptdServer struct {
 		Address  string `yaml:"address"`  // Service listening address
@@ -46,8 +53,8 @@ type Config struct {
 		Filename string `yaml:"filename"` // Log filename
 	} `yaml:"logging"`
 
-	UserDB      map[string]string `yaml:"userDB"` // User database (username/password pairs)
-	EmailServer map[string]string `yaml:"emailServer"`
+	UserDB      map[string]string          `yaml:"userDB"` // User database (username/password pairs)
+	EmailServer map[string]EmailServerItem `yaml:"emailServer"`
 
 	VerificationRules struct {
 		Sender          string         `yaml:"sender"`

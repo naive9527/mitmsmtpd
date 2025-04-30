@@ -188,11 +188,12 @@ func MailHandler(remoteAddr net.Addr, from string, to []string, data []byte) (er
 		return err
 	}
 
-	// err = SendMailMsg(from, mailPartType.GoMailMsg)
-	// if err != nil {
-	// 	SaveMail(data)
-	// 	return err
-	// }
+	// After all the verifications have been passed, the email will be sent out.
+	err = SendMailData(from, to, data)
+	if err != nil {
+		SaveMail(data)
+		return err
+	}
 	return nil
 }
 
