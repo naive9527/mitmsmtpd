@@ -6,6 +6,8 @@ import (
 	"log/slog"
 	"net/smtp"
 	"strings"
+
+	"gopkg.in/gomail.v2"
 )
 
 type loginAuth struct {
@@ -89,27 +91,45 @@ func SendMailData(from string, to []string, data []byte) error {
 		data)
 }
 
-// func main() {
-// 	mailFile := "golang__10415814528984713763.eml"
-// 	mechanisms := "LOGIN" // "PLAIN LOGIN CRAM-MD5"
-// 	from := "it-report@x-epic.com"
-// 	password := "xxx"
-// 	smtpServer := "smtp.office365.com"
-// 	smtpPort := 587
-// 	to := []string{"kevinwu@x-epic.com"}
-// 	cc := []string{"kevinwutest@x-epic.com"}
-// 	recipient := append(append([]string{}, to...), cc...)
+func GenMailContent(content, clientip, from, emailFile string) string {
+	htmlBody := `
+	<p> Mail Gateway notification</p>
+	<table border="1">  
+	<tr>  
+		<td>ClientIP</td><td>%s</td>  
+	</tr>  
+ 	<tr>  
+		<td>From</td><td>%s</td>  
+	</tr>  
+	<tr>  
+		<td>Error</td><td>%s</td>  
+	</tr>  
+	<tr>  
+		<td>Saved Email File</td><td>%s</td>  
+	</tr>  	
+	</table>  
+	`
+	return fmt.Sprintf(htmlBody, clientip, from, content, emailFile)
+}
 
-// 	data, err := os.ReadFile(mailFile)
-// 	if err != nil {
-// 		fmt.Printf("读取文件失败: %v\n", err)
-// 		return
-// 	}
+func SendMailMsg(smtpServer string, smtpPort int, from, password string, to, cc []string, subject, content string) error {
+	m := gomail.NewMessage()
+	m.SetHeader("From", from)
+	m.SetHeader("To", to...)
+	m.SetHeader("Cc", cc...)
+	m.SetHeader("Subject", subject)
 
-// 	err = SendMailExt(smtpServer, smtpPort, mechanisms, from, password, recipient, data)
-// 	if err != nil {
-// 		fmt.Printf("邮件发送失败: %v\n", err)
-// 		return
-// 	}
-// 	fmt.Println("邮件发送成功")
-// }
+	m.SetBody("text/html", content)
+
+	d := gomail.NewDialer(smtpServer, smtpPort, from, password)
+
+	if err := d.DialAndSend(m); err != nil {
+		info := fmt.Sprintf("the notification email sent out error %s, From: %s, To: %v, Cc: %v", err.Error(), from, to, cc)
+		slog.Error(info)
+		slog.Error(fmt.Sprintf("the failed send notification email content:\n %s", content))
+		return errors.New(info)
+	}
+	info := fmt.Sprintf("the notification email sent out success, From: %s, To: %v, Cc: %v", from, to, cc)
+	slog.Info(info)
+	return nil
+}

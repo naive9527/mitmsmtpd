@@ -68,6 +68,10 @@ type Config struct {
 		RecipientRegexp *regexp.Regexp `yaml:"-"`
 		SenderIPRegexp  *regexp.Regexp `yaml:"-"`
 	} `yaml:"verificationRules"`
+
+	Notification struct {
+		Email *NotificationEmailStruct `yaml:"email"`
+	} `yaml:"notification"`
 }
 
 func InitConfig() {
