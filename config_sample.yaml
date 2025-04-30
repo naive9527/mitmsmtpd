@@ -12,7 +12,7 @@ smtpdTLS:
 smtpdAuth:
   mechanisms:                     # Supported authentication mechanisms
     "LOGIN": true  
-    "PLAIN": true
+    "PLAIN": false
     "CRAM-MD5": false
   required: true                  # Require authentication
   allowAnyAuth: true                # Allow authentication through any username and password.
@@ -23,17 +23,23 @@ logging:
 
 userDB:                          # username: password
   "user01@example.com": "123456"
-  "user02@example.com": "123456"
+  "user02@example.com": "12345678"
   "admin@test.org": "securePass"
 
+# 通过发件的邮箱地址，确定真正的邮件服务器地址（本服务是个中间人）
+# By using the sender's email address, determine the actual email server address (this service acts as an intermediary)
+emailServer:
+  "example.com": "smtp.example.com:587"
+  "mymail.com": "smtp.office365.com:587"
+  "mycom.com": "smtp.office365.com:587"
 
 verificationRules:  
-  sender: "^.*@example\\.com$"               # Allowed sender regex pattern (reject if not matched)
-  recipient: "^.*@example\\.com$"            # Required recipient regex pattern (all recipients must match)
+  sender: "^(.*@example\\.com|.*@mycom\\.com)$"               # Allowed sender regex pattern (reject if not matched)
+  recipient: "^(.*@example\\.com|.*@mycom\\.com)$"            # Required recipient regex pattern (all recipients must match)
   senderIP: "^(127\\.0\\.0\\.1|10\\.10\\.20\\.11)$"  # Allowed client IP regex (reject all if not matched)
   emailBodySize: 0                       # Max email body size in bytes (0=unlimited)
   attachment:
-    allowed: true                            # Whether attachments are permitted (default: false)
+    allowed: false                            # Whether attachments are permitted (default: false)
     maxSize: 0                             # Max attachment size in bytes (0=unlimited)
   embeddedContent:                           # Embedded elements in email body (e.g., images)
     allowed: true                            # Whether embedded content is permitted (default: false)
@@ -50,3 +56,5 @@ verificationRules:
 #   emailBodyEmbedded:                      # 邮件正文嵌入的元素(一般为图片)  
 #     enabled: false                        # 是否允许邮件正文嵌入元素，默认为false，不允许 
 #     size: 1024                            # 邮件正文嵌入元素大小，单位Bytes，如果允许嵌入元素且大小超过此值则拒绝，默认为0，不限制大小  
+
+

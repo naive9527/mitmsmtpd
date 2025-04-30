@@ -14,8 +14,6 @@ import (
 
 	"github.com/emersion/go-message"
 	gomsgmail "github.com/emersion/go-message/mail"
-	"github.com/spf13/cast"
-	"gopkg.in/gomail.v2"
 )
 
 var MailInfoCacheIns *MailInfoCache
@@ -124,10 +122,6 @@ func MailHandler(remoteAddr net.Addr, from string, to []string, data []byte) (er
 
 	// Loop through reading each part of the body.
 	mailPartType := NewMailPartType()
-	mailPartType.GoMailMsg.SetHeader("From", from)
-	mailPartType.GoMailMsg.SetHeader("To", toList)
-	mailPartType.GoMailMsg.SetHeader("Cc", ccList)
-	mailPartType.GoMailMsg.SetHeader("Subject", subject)
 	mailBodyCount := 0
 	for {
 		p, err := body.NextPart()
@@ -194,11 +188,11 @@ func MailHandler(remoteAddr net.Addr, from string, to []string, data []byte) (er
 		return err
 	}
 
-	err = SendMailMsg(from, mailPartType.GoMailMsg)
-	if err != nil {
-		SaveMail(data)
-		return err
-	}
+	// err = SendMailMsg(from, mailPartType.GoMailMsg)
+	// if err != nil {
+	// 	SaveMail(data)
+	// 	return err
+	// }
 	return nil
 }
 
@@ -207,11 +201,10 @@ type mailPartType struct {
 	Attachment      string
 	EmbeddedContent string
 	Unknown         string
-	GoMailMsg       *gomail.Message
 }
 
 func NewMailPartType() *mailPartType {
-	return &mailPartType{"Body", "Attachment", "EmbeddedContent", "Unknown", gomail.NewMessage()}
+	return &mailPartType{"Body", "Attachment", "EmbeddedContent", "Unknown"}
 }
 
 func (mailPT *mailPartType) CheckMailPartType(p *gomsgmail.Part) (ret string, err error) {
@@ -232,25 +225,10 @@ func (mailPT *mailPartType) CheckMailPartType(p *gomsgmail.Part) (ret string, er
 		// This is the message's text (can be plain-text or HTML)
 		if contentId != "" {
 			slog.Warn("The file embedded in the email body", "Filename", contentId, "ContentType", contentType)
-			mailPT.GoMailMsg.Embed("",
-				gomail.SetHeader(map[string][]string{"Content-ID": {contentId}}),
-				gomail.SetCopyFunc(func(w io.Writer) error {
-					_, err := io.Copy(w, p.Body)
-					return err
-				}),
-			)
 			return mailPT.EmbeddedContent, nil
 		} else {
 			// mail body
 			slog.Info("The email body", "ContentType", contentType)
-			partData, err := io.ReadAll(p.Body)
-			if err != nil {
-				info := fmt.Sprintf("Failed to read the content of the email, contentType %s error: %s", contentType, err.Error())
-				slog.Error(info)
-				return mailPT.Unknown, errors.New(info)
-			}
-			mailPT.GoMailMsg.SetBody(contentType, string(partData))
-
 			return mailPT.Body, nil
 		}
 	case *gomsgmail.AttachmentHeader:
@@ -260,22 +238,9 @@ func (mailPT *mailPartType) CheckMailPartType(p *gomsgmail.Part) (ret string, er
 		if err != nil || filename == "" {
 			// filename = strings.Trim(contentId, "<>")
 			slog.Warn("The file embedded in the email body", "Filename", contentId, "contentType", contentType)
-			mailPT.GoMailMsg.Embed("",
-				gomail.SetHeader(map[string][]string{"Content-ID": {contentId}}),
-				gomail.SetCopyFunc(func(w io.Writer) error {
-					_, err := io.Copy(w, p.Body)
-					return err
-				}),
-			)
 			return mailPT.EmbeddedContent, nil
 		} else {
 			slog.Warn("Email attachment", "Filename", filename, "contentType", contentType)
-			mailPT.GoMailMsg.Attach(filename,
-				gomail.SetCopyFunc(func(w io.Writer) error {
-					_, err := io.Copy(w, p.Body)
-					return err
-				}),
-			)
 			return mailPT.Attachment, nil
 		}
 
@@ -284,34 +249,6 @@ func (mailPT *mailPartType) CheckMailPartType(p *gomsgmail.Part) (ret string, er
 		return mailPT.Unknown, nil
 	}
 
-}
-
-func SendMailMsg(from string, mailMsg *gomail.Message) error {
-	smtpDomain := strings.Split(from, "@")[1]
-	smtpServerCfg, ok := CFG.EmailServer[smtpDomain]
-	if !ok {
-		info := fmt.Sprintf("The email server is not configured for %s", from)
-		slog.Error(info)
-		return errors.New(info)
-	}
-
-	smtpServer := strings.Split(smtpServerCfg, ":")[0]
-	smtpPort := cast.ToInt(strings.Split(smtpServerCfg, ":")[1])
-	password, err := MailInfoCacheIns.GetUserPass(from)
-	if err != nil {
-		return err
-	}
-
-	d := gomail.NewDialer(smtpServer, smtpPort, from, password)
-	if err := d.DialAndSend(mailMsg); err != nil {
-		info := fmt.Sprintf("%s send to %s failure: %s", from, smtpServerCfg, err.Error())
-		slog.Error(info)
-		return errors.New(info)
-	}
-
-	info := fmt.Sprintf("%s send success", from)
-	slog.Info(info)
-	return nil
 }
 
 func SaveMail(data []byte) (err error) {
