@@ -1,18 +1,18 @@
 **其他语言版本: [English](README.md), [中文](README_zh.md).**
 
 ## 启动服务
-go build .  # 编译出 mitmsmtpd 可执行文件  
-将 config_sample.yaml 复制为 config.yaml 并修改成自己的配置
-./mitmsmtpd   # 启动服务
+    go build .  # 编译出 mitmsmtpd 可执行文件  
+    将 config_sample.yaml 复制为 config.yaml 并修改成自己的配置
+    ./mitmsmtpd   # 启动服务
 
 ## 业务流程
 
-为了方便描述假设信息如下：
+    为了方便描述假设信息如下：
 
-邮件服务器: smtp.example.com
-邮件用户: user01@example.com,user02@example.com
-MUA的IP： 10.10.20.10 
-mitmsmtpd的IP： 10.10.20.111
+    邮件服务器: smtp.example.com
+    邮件用户: user01@example.com,user02@example.com
+    MUA的IP： 10.10.20.10 
+    mitmsmtpd的IP： 10.10.20.111
 
 ### 一般正常情况
     1、user01@example.com 在 10.10.20.10编写邮件设置收信人为  user02@example.com 
