@@ -69,7 +69,7 @@ func MailHandler(remoteAddr net.Addr, from string, to []string, data []byte) (er
 	ip, err := GetIPFromAddr(remoteAddr)
 	if err != nil {
 		slog.Error(err.Error())
-		TriggerErrNotification(err.Error(), ip, from, to, data, CFG.Notification.Email)
+		TriggerErrNotification(err.Error(), ip, from, to, data)
 		return err
 	}
 
@@ -77,7 +77,7 @@ func MailHandler(remoteAddr net.Addr, from string, to []string, data []byte) (er
 	msg, err := message.Read(r)
 	if err != nil {
 		slog.Error(err.Error())
-		TriggerErrNotification(err.Error(), ip, from, to, data, CFG.Notification.Email)
+		TriggerErrNotification(err.Error(), ip, from, to, data)
 		return err
 	}
 
@@ -95,19 +95,19 @@ func MailHandler(remoteAddr net.Addr, from string, to []string, data []byte) (er
 	ValidateEmail := NewValidateEmail(ip, from, to, 0, 0, 0)
 	// validate email sender client ip
 	if err = ValidateEmail.ValidateEmailClientIP(); err != nil {
-		TriggerErrNotification(err.Error(), ip, from, to, data, CFG.Notification.Email)
+		TriggerErrNotification(err.Error(), ip, from, to, data)
 		return err
 	}
 
 	// validate email sender
 	if err = ValidateEmail.ValidateEmailSender(); err != nil {
-		TriggerErrNotification(err.Error(), ip, from, to, data, CFG.Notification.Email)
+		TriggerErrNotification(err.Error(), ip, from, to, data)
 		return err
 	}
 
 	// validate email recipient
 	if err = ValidateEmail.ValidateEmailRecipient(); err != nil {
-		TriggerErrNotification(err.Error(), ip, from, to, data, CFG.Notification.Email)
+		TriggerErrNotification(err.Error(), ip, from, to, data)
 		return err
 	}
 
@@ -115,7 +115,7 @@ func MailHandler(remoteAddr net.Addr, from string, to []string, data []byte) (er
 	r = strings.NewReader(string(data))
 	body, err := gomsgmail.CreateReader(r)
 	if err != nil {
-		TriggerErrNotification(err.Error(), ip, from, to, data, CFG.Notification.Email)
+		TriggerErrNotification(err.Error(), ip, from, to, data)
 		slog.Error(err.Error())
 		return err
 	}
@@ -130,7 +130,7 @@ func MailHandler(remoteAddr net.Addr, from string, to []string, data []byte) (er
 		}
 		if err != nil {
 			slog.Error(err.Error())
-			TriggerErrNotification(err.Error(), ip, from, to, data, CFG.Notification.Email)
+			TriggerErrNotification(err.Error(), ip, from, to, data)
 			return err
 		}
 
@@ -139,7 +139,7 @@ func MailHandler(remoteAddr net.Addr, from string, to []string, data []byte) (er
 		if err != nil {
 			info := fmt.Sprintf("Failed to calculate the size of contentType: %s, error: %s", contentType, err.Error())
 			slog.Error(info)
-			TriggerErrNotification(err.Error(), ip, from, to, data, CFG.Notification.Email)
+			TriggerErrNotification(err.Error(), ip, from, to, data)
 			return errors.New(info)
 		}
 
@@ -147,7 +147,7 @@ func MailHandler(remoteAddr net.Addr, from string, to []string, data []byte) (er
 		if err != nil {
 			info := fmt.Sprintf("from user %s(%s) failed to check mail part type: %s, error: %s", from, ip, contentType, err.Error())
 			slog.Error(info)
-			TriggerErrNotification(err.Error(), ip, from, to, data, CFG.Notification.Email)
+			TriggerErrNotification(err.Error(), ip, from, to, data)
 			return errors.New(info)
 		}
 		if currentPartType == mailPartType.Body {
@@ -156,7 +156,7 @@ func MailHandler(remoteAddr net.Addr, from string, to []string, data []byte) (er
 			if mailBodyCount > 1 {
 				info := "the email has more than one body, please check it"
 				slog.Error(info)
-				TriggerErrNotification(info, ip, from, to, data, CFG.Notification.Email)
+				TriggerErrNotification(info, ip, from, to, data)
 				return errors.New(info)
 			}
 
@@ -168,31 +168,31 @@ func MailHandler(remoteAddr net.Addr, from string, to []string, data []byte) (er
 		} else {
 			info := "unknown header type"
 			slog.Error(info)
-			TriggerErrNotification(info, ip, from, to, data, CFG.Notification.Email)
+			TriggerErrNotification(info, ip, from, to, data)
 			return errors.New(info)
 		}
 	}
 
 	// Validate the email body size
 	if err = ValidateEmail.ValidateBodySize(); err != nil {
-		TriggerErrNotification(err.Error(), ip, from, to, data, CFG.Notification.Email)
+		TriggerErrNotification(err.Error(), ip, from, to, data)
 		return err
 	}
 	// Validate the email attachment size
 	if err = ValidateEmail.ValidateAttachments(); err != nil {
-		TriggerErrNotification(err.Error(), ip, from, to, data, CFG.Notification.Email)
+		TriggerErrNotification(err.Error(), ip, from, to, data)
 		return err
 	}
 	// Validate the email embedded content size
 	if err = ValidateEmail.ValidateEmbeddedContent(); err != nil {
-		TriggerErrNotification(err.Error(), ip, from, to, data, CFG.Notification.Email)
+		TriggerErrNotification(err.Error(), ip, from, to, data)
 		return err
 	}
 
 	// After all the verifications have been passed, the email will be sent out.
 	err = SendMailData(from, to, data)
 	if err != nil {
-		TriggerErrNotification(err.Error(), ip, from, to, data, CFG.Notification.Email)
+		TriggerErrNotification(err.Error(), ip, from, to, data)
 		return err
 	}
 	return nil

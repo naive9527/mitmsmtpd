@@ -70,7 +70,9 @@ type Config struct {
 	} `yaml:"verificationRules"`
 
 	Notification struct {
-		Email *NotificationEmailStruct `yaml:"email"`
+		// Other  *NotificationOtherStruct `yaml:"other"`
+		Email  *NotificationEmailStruct `yaml:"email"`
+		Email2 *NotificationEmailStruct `yaml:"email2"`
 	} `yaml:"notification"`
 }
 

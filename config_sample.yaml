@@ -38,10 +38,6 @@ emailServer:
     server: "smtp.office365.com"
     port: 587
     authMechanisms: "LOGIN"  
-  "mymail.com": 
-    server: "smtp.office365.com"
-    port: 587
-    authMechanisms: "LOGIN" 
 
 verificationRules:  
   sender: "^(.*@example\\.com|.*@mymail\\.com)$"               # Allowed sender regex pattern (reject if not matched)
@@ -75,8 +71,11 @@ notification:
     password: "xxxxx"
     server: "smtp.office365.com"
     port: 587
-    to: ["kevinwu@mymail.com"]
-    cc: ["kevinwutest@mymail.com"]
+    to: ["userwu@mymail.com"]
+    cc: ["userwutest@mymail.com"]
     subject: "Mail Gateway Abnormality"
-
+  sms:
+    enabled: true
+    xxx: "xxxxx"
+    xxxx: "xxxxx"
 
