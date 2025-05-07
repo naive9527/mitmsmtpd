@@ -93,21 +93,23 @@ func SendMailData(from string, to []string, data []byte) error {
 
 func GenMailContent(content, clientip, from, emailFile string) string {
 	htmlBody := `
-	<p> Mail Gateway notification</p>
-	<table border="1">  
-	<tr>  
-		<td>ClientIP</td><td>%s</td>  
-	</tr>  
- 	<tr>  
-		<td>From</td><td>%s</td>  
-	</tr>  
-	<tr>  
-		<td>Error</td><td>%s</td>  
-	</tr>  
-	<tr>  
-		<td>Saved Email File</td><td>%s</td>  
-	</tr>  	
-	</table>  
+	<div style="margin: 10px auto 10px 10px;">
+		<p> Mail Gateway notification</p>
+		<table border="2"  cellspacing="0" cellpadding="6" bordercolor="dimgray" style="min-width: 800px">
+			<tr>  
+				<td>ClientIP</td><td>%s</td>  
+			</tr>  
+			<tr>  
+				<td>From</td><td>%s</td>  
+			</tr>  
+			<tr>  
+				<td>Error</td><td>%s</td>  
+			</tr>  
+			<tr>  
+				<td>Saved Email File</td><td>%s</td>  
+			</tr>  
+		</table>
+	</div>
 	`
 	return fmt.Sprintf(htmlBody, clientip, from, content, emailFile)
 }
