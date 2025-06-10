@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"reflect"
 	"strings"
+	"time"
 )
 
 type Notifier interface {
@@ -62,14 +63,17 @@ func TriggerErrNotification(content, clientip, from string, to []string, data []
 }
 
 type NotificationEmailStruct struct {
-	Enabled  bool     `yaml:"enabled"`
-	From     string   `yaml:"from"`
-	Password string   `yaml:"password"`
-	Server   string   `yaml:"server"`
-	Port     int      `yaml:"port"`
-	To       []string `yaml:"to"`
-	Cc       []string `yaml:"cc"`
-	Subject  string   `yaml:"subject"`
+	Enabled       bool     `yaml:"enabled"`
+	From          string   `yaml:"from"`
+	Password      string   `yaml:"password"`
+	Server        string   `yaml:"server"`
+	Port          int      `yaml:"port"`
+	To            []string `yaml:"to"`
+	Cc            []string `yaml:"cc"`
+	Subject       string   `yaml:"subject"`
+	RetryEnabled  bool     `yaml:"retryEnabled"`
+	RetryInterval int      `yaml:"retryInterval"`
+	MaxRetry      int      `yaml:"maxRetry"`
 }
 
 func (msgsender *NotificationEmailStruct) GenContent(content, clientip, from, emailFile string) string {
@@ -77,5 +81,19 @@ func (msgsender *NotificationEmailStruct) GenContent(content, clientip, from, em
 }
 
 func (msgsender *NotificationEmailStruct) Send(content string) error {
-	return SendMailMsg(msgsender.Server, msgsender.Port, msgsender.From, msgsender.Password, msgsender.To, msgsender.Cc, msgsender.Subject, content)
+	if !msgsender.Enabled {
+		slog.Warn("NotificationEmailStruct.Send: Email notification is not enabled")
+		return nil
+	}
+
+	var err error
+	for i := 0; i < msgsender.MaxRetry; i++ {
+		err = SendMailMsg(msgsender.Server, msgsender.Port, msgsender.From, msgsender.Password, msgsender.To, msgsender.Cc, msgsender.Subject, content)
+		if err == nil {
+			return nil
+		}
+		slog.Error(fmt.Sprintf("NotificationEmailStruct.Send attempt %d failed: %v", i+1, err))
+		time.Sleep(time.Duration(msgsender.RetryInterval) * time.Second)
+	}
+	return fmt.Errorf("Send failed after %d retries: %v", msgsender.MaxRetry, err)
 }

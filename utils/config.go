@@ -77,8 +77,7 @@ type Config struct {
 
 	Notification struct {
 		// Other  *NotificationOtherStruct `yaml:"other"`
-		Email  *NotificationEmailStruct `yaml:"email"`
-		Email2 *NotificationEmailStruct `yaml:"email2"`
+		Email *NotificationEmailStruct `yaml:"email"`
 	} `yaml:"notification"`
 }
 
