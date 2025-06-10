@@ -6,8 +6,8 @@ smptdServer:
 
 smtpdTLS:
   enabled: true                   # Enable TLS
-  cert: "/opt/mygo/mitmsmtpd/tls/mail.pem"     # Path to TLS certificate
-  key: "/opt/mygo/mitmsmtpd/tls/mail-key.pem"  # Path to TLS private key
+  cert: "/opt/mitmsmtpd/tls/mail.pem"     # Path to TLS certificate
+  key: "/opt/mitmsmtpd/tls/mail-key.pem"  # Path to TLS private key
 
 smtpdAuth:
   mechanisms:                     # Supported authentication mechanisms
@@ -18,7 +18,7 @@ smtpdAuth:
   allowAnyAuth: true                # Allow authentication through any username and password.
 
 logging:
-  path: "/opt/mygo/mitmsmtpd/"    # Log directory
+  path: "/tmp/"    # Log directory
   filename: "app.log"            # Log filename
 
 userDB:                          # username: password
@@ -39,6 +39,12 @@ emailServer:
     port: 587
     authMechanisms: "LOGIN"  
 
+# 再发送邮件前先进行探测，确保邮件服务器可用。如果部署在内网，并且邮件服务器的dns的A解析变化时，内网防火墙无法及时更新白名单，导致发送邮件失败。
+smtpProbe:
+  enable: true        # 是否启用邮件服务器探测
+  retryInterval: 60   # 重试间隔，单位：秒
+  maxRetry: 10        # 最大重试次数
+  
 verificationRules:  
   sender: "^(.*@example\\.com|.*@mymail\\.com)$"               # Allowed sender regex pattern (reject if not matched)
   recipient: "^(.*@example\\.com|.*@mymail\\.com)$"            # Required recipient regex pattern (all recipients must match)

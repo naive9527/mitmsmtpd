@@ -40,3 +40,23 @@
     Generate a certificate using the private CA and configure it on mitmsmtpd
 
 
+## config service on linux
+```
+# /etc/systemd/system/mitmsmtpd.service
+[Unit]
+Description=MITM SMTPD Service
+After=network.target
+
+[Service]
+Type=simple
+User=root
+Group=root
+WorkingDirectory=/opt/mitmsmtpd
+ExecStart=/opt/mitmsmtpd/mitmsmtpd
+Restart=on-failure
+LimitNOFILE=4096
+
+[Install]
+WantedBy=multi-user.target
+```
+

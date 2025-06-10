@@ -36,6 +36,12 @@ type Config struct {
 		Hostname string `yaml:"hostname"` // Server hostname (empty for auto-detection)
 	} `yaml:"smptdServer"`
 
+	SmtpProbe struct {
+		Enable        bool `yaml:"enable"`        // 是否开启探测
+		RetryInterval int  `yaml:"retryInterval"` // 探测失败重试间隔，单位：秒
+		MaxRetry      int  `yaml:"maxRetry"`      // 最大重试次数
+	} `yaml:"smtpProbe"`
+
 	SmtpdAuth struct {
 		Mechanisms   map[string]bool `yaml:"mechanisms"`   // Supported authentication mechanisms
 		Required     bool            `yaml:"required"`     // Authentication required

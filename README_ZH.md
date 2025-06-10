@@ -37,5 +37,23 @@
     生成私有ca, 将ca配置到 MUA 上面 
     使用私有ca 生成证书配置到 mitmsmtpd 上面 
 
+## linux配置启动服务
+```
+# /etc/systemd/system/mitmsmtpd.service
+[Unit]
+Description=MITM SMTPD Service
+After=network.target
 
+[Service]
+Type=simple
+User=root
+Group=root
+WorkingDirectory=/opt/mitmsmtpd
+ExecStart=/opt/mitmsmtpd/mitmsmtpd
+Restart=on-failure
+LimitNOFILE=4096
+
+[Install]
+WantedBy=multi-user.target
+```
 
